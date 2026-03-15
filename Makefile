@@ -10,8 +10,12 @@ SRC = src/main.cpp \
       lib/imgui/misc/cpp/imgui_stdlib.cpp \
       lib/imgui-sfml/imgui-SFML.cpp
 
-OBJ = $(SRC:.cpp=.o)
 BUILD_DIR = bin/build
+OBJ_DIR = $(BUILD_DIR)/obj
+
+# Map source files to object files in OBJ_DIR
+OBJ = $(patsubst %.cpp,$(OBJ_DIR)/%.o,$(SRC))
+
 TARGET = $(BUILD_DIR)/my_app
 
 all: $(TARGET)
@@ -21,13 +25,13 @@ $(TARGET): $(OBJ)
 	@mkdir -p $(BUILD_DIR)
 	$(CXX) $(OBJ) -o $@ $(LDFLAGS)
 
-# Compile each object file
-%.o: %.cpp
+# Compile each object file to OBJ_DIR
+$(OBJ_DIR)/%.o: %.cpp
+	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # Clean all object files and target
 clean:
-	rm -f $(OBJ)
 	rm -rf $(BUILD_DIR)
 
 # Run target: clean, build, cd to build, run, return

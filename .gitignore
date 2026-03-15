@@ -1,0 +1,68 @@
+# =========================
+# Build outputs
+# =========================
+bin/
+build/
+*/build/
+
+# Executables
+*.out
+*.exe
+*.app
+*.elf
+my_app
+
+# =========================
+# Object files
+# =========================
+*.o
+*.obj
+*.lo
+
+# =========================
+# Static / dynamic libs
+# =========================
+*.a
+*.so
+*.so.*
+*.dll
+*.dylib
+
+# =========================
+# CMake files
+# =========================
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+CMakeScripts/
+Testing/
+*.cmake
+
+# =========================
+# ImGui runtime config
+# =========================
+imgui.ini
+*/imgui.ini
+
+# =========================
+# Logs / temp
+# =========================
+*.log
+*.tmp
+*.temp
+
+# =========================
+# Editor files
+# =========================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# =========================
+# OS files
+# =========================
+.DS_Store
+Thumbs.db   

@@ -45,12 +45,13 @@ class Game
     void init(const std::string &config);
     void setPaused(bool paused);
 
-    void sMovement();  // the movement system
-    void sUserInput(); // the input system
-    void sLifespan();  // enemy lifespan system
-    void sRender();    // renderer system
-    void sCollision(); // collision system
-    void sEnemySpawner(); //enemy spawner system
+    void sMovement();     // the movement system
+    void sUserInput();    // the input system
+    void sLifespan();     // enemy lifespan system
+    void sRender();       // renderer system
+    void sCollision();    // collision system
+    void sEnemySpawner(); // enemy spawner system
+    void sUiSystem();     // UI system
 
     void spawnPlayer();
     void spawnEnemy();

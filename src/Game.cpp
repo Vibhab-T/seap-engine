@@ -1,5 +1,10 @@
 #include "Game.h"
+
+#include "imgui.h"
+#include "imgui-SFML.h"
+
 #include <iostream>
+#include <cmath>
 
 Game::Game(const std::string &config) // the constructor, init() is called here. the run() is called from main.cpp
 {
@@ -12,15 +17,23 @@ void Game::init(const std::string &path)
 
     m_window.create(sf::VideoMode(1920, 1280), "Geo Wars");
     m_window.setFramerateLimit(60);
+    ImGui::SFML::Init(m_window);
+    ImGuiIO &io = ImGui::GetIO();
+    io.Fonts->Clear();
+    io.Fonts->AddFontFromFileTTF("/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf", 20.0f);
+    ImGui::SFML::UpdateFontTexture();
 
     spawnPlayer();
 }
 
 void Game::run()
 {
+    sf::Clock deltaClockForImGui;
+
     while (m_running && m_window.isOpen())
     {
         sUserInput(); // always handle input
+        ImGui::SFML::Update(m_window, deltaClockForImGui.restart());
 
         if (!m_paused)
         {
@@ -32,8 +45,12 @@ void Game::run()
             m_currentFrame++;
         }
 
+        sUiSystem();
         sRender(); // always render
     }
+
+    ImGui::SFML::Shutdown();
+    m_window.close();
 }
 
 void Game::setPaused(bool paused)
@@ -106,12 +123,45 @@ void Game::spawnEnemy()
 
 void Game::spawnSmallEnemies(std::shared_ptr<Entity> e)
 {
+    // dont spawn if the parent entity already has a lifespan component that means it was already a small enemy
+    if (e->cLifespan)
+    {
+        return;
+    }
     // spawn small enemies at the location of the input enemy e
 
     // read the values of the original enemy
     // spawn the same amount as og's vertices
     // same color
     // double points
+
+    int vertices = e->cShape->circle.getPointCount();
+    sf::Color fillColor = e->cShape->circle.getFillColor();
+    sf::Color outlineColor = e->cShape->circle.getOutlineColor();
+    Vec2 positionToSpawn = e->cTransform->pos;
+    float smallEnemyRadius = e->cCollision->radius / 2.0f;
+    float speed = 4.0f;
+    int scoreValue = e->cScore->score * 2;
+
+    // spread it evenly around the original's vertices
+    // full circle is 2pi. 2pi/vertices = equal angle steps
+    float angleStep = (2.0f * 3.14159265f) / vertices;
+
+    for (int i = 0; i < vertices; i++)
+    {
+        float angle = i * angleStep;
+
+        // cos and sine fives x and y.
+        // cos, sin is always a unit vector towards the angle. since unit vector, multiply by speed
+        Vec2 velocity(std::cos(angle) * speed, std::sin(angle) * speed);
+
+        auto small = m_entities.addEntity("enemy");
+        small->cTransform = std::make_shared<CTransform>(positionToSpawn, velocity, 0.0f);
+        small->cShape = std::make_shared<CShape>(smallEnemyRadius, vertices, fillColor, outlineColor, 2.0f);
+        small->cCollision = std::make_shared<CCollision>(smallEnemyRadius);
+        small->cScore = std::make_shared<CScore>(scoreValue);
+        small->cLifespan = std::make_shared<CLifespan>(90); // 1.5 seconds at 60fps
+    }
 }
 
 void Game::spawnBullet(std::shared_ptr<Entity> e, const Vec2 &target)
@@ -186,6 +236,8 @@ void Game::sUserInput()
     sf::Event event;
     while (m_window.pollEvent(event))
     {
+        ImGui::SFML::ProcessEvent(m_window, event);
+
         if (event.type == sf::Event::Closed)
         {
             m_running = false;
@@ -244,21 +296,23 @@ void Game::sUserInput()
             }
         }
 
-        if (event.type == sf::Event::MouseButtonPressed)
-        {
-            if (event.mouseButton.button == sf::Mouse::Left)
+        // fire mouse events if ImGui isnt consuming it
+        if (!ImGui::GetIO().WantCaptureMouse)
+            if (event.type == sf::Event::MouseButtonPressed)
             {
-                std::cout << "Left Mouse Clicked At: " << event.mouseButton.x << ", " << event.mouseButton.y << std::endl;
+                if (event.mouseButton.button == sf::Mouse::Left)
+                {
+                    std::cout << "Left Mouse Clicked At: " << event.mouseButton.x << ", " << event.mouseButton.y << std::endl;
 
-                spawnBullet(m_player, Vec2(event.mouseButton.x, event.mouseButton.y));
-            }
-            if (event.mouseButton.button == sf::Mouse::Right)
-            {
-                std::cout << "Right Mouse Clicked At: " << event.mouseButton.x << ", " << event.mouseButton.y << std::endl;
+                    spawnBullet(m_player, Vec2(event.mouseButton.x, event.mouseButton.y));
+                }
+                if (event.mouseButton.button == sf::Mouse::Right)
+                {
+                    std::cout << "Right Mouse Clicked At: " << event.mouseButton.x << ", " << event.mouseButton.y << std::endl;
 
-                // call specialWeaponHere
+                    // call specialWeaponHere
+                }
             }
-        }
     }
 }
 
@@ -275,7 +329,7 @@ void Game::sRender()
         e->cShape->circle.setRotation(e->cTransform->angle);
         m_window.draw(e->cShape->circle);
     }
-
+    ImGui::SFML::Render(m_window);
     m_window.display();
 }
 
@@ -379,4 +433,45 @@ void Game::sLifespan()
         e->cShape->circle.setFillColor(fill);
         e->cShape->circle.setOutlineColor(outline);
     }
+}
+
+void Game::sUiSystem()
+{
+
+    // pin the window to top left
+    ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(250, 0), ImGuiCond_Always);
+
+    ImGui::Begin("##hud", nullptr,
+                 ImGuiWindowFlags_NoTitleBar |
+                     ImGuiWindowFlags_NoResize |
+                     ImGuiWindowFlags_NoMove |
+                     ImGuiWindowFlags_NoScrollbar |
+                     ImGuiWindowFlags_NoBackground |
+                     ImGuiWindowFlags_NoBringToFrontOnFocus);
+
+    ImGui::SetWindowFontScale(1.4f);
+    ImGui::TextColored(ImVec4(1, 1, 0, 1), "Score: %d", m_score);
+
+    ImGui::Spacing();
+
+    if (m_paused)
+    {
+        if (ImGui::Button("Resume", ImVec2(110, 40)))
+            setPaused(false);
+    }
+    else
+    {
+        if (ImGui::Button("Pause", ImVec2(110, 40)))
+            setPaused(true);
+    }
+
+    ImGui::SameLine();
+
+    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.7f, 0.1f, 0.1f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.9f, 0.2f, 0.2f, 1.0f));
+    if (ImGui::Button("Exit", ImVec2(110, 40)))
+        m_running = false;
+    ImGui::PopStyleColor(2);
+    ImGui::End();
 }

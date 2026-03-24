@@ -36,8 +36,10 @@ class Game
     int m_score = 0;
     int m_currentFrame = 0;
     int m_lastEnemySpawnTime = 0;
+    int m_lives = 5;
 
     bool m_paused = false;
+    bool m_gameOver = false;
     bool m_running = true;
 
     std::shared_ptr<Entity> m_player;
@@ -53,6 +55,7 @@ class Game
     void sEnemySpawner(); // enemy spawner system
     void sUiSystem();     // UI system
 
+    void resetGame();
     void spawnPlayer();
     void spawnEnemy();
     void spawnSmallEnemies(std::shared_ptr<Entity> entity);

@@ -15,7 +15,7 @@ void Game::init(const std::string &path)
 {
     // TODO: read the config file here
 
-    m_window.create(sf::VideoMode(1920, 1280), "Geo Wars");
+    m_window.create(sf::VideoMode(1920, 1080), "Geo Wars");
     m_window.setFramerateLimit(60);
     ImGui::SFML::Init(m_window);
     ImGuiIO &io = ImGui::GetIO();
@@ -379,9 +379,18 @@ void Game::sCollision()
         if (distanceBetween < sumOfRadius)
         {
             enemy->destroy();
+            m_lives--;
 
-            // respawn player at center - just move the player
-            m_player->cTransform->pos = Vec2(m_window.getSize().x / 2.0f, m_window.getSize().y / 2.0f);
+            if (m_lives <= 0)
+            {
+                m_gameOver = true;
+                setPaused(true);
+            }
+            else
+            {
+                // respawn player at center - just move the player
+                m_player->cTransform->pos = Vec2(m_window.getSize().x / 2.0f, m_window.getSize().y / 2.0f);
+            }
         }
     }
 
@@ -452,21 +461,16 @@ void Game::sUiSystem()
 
     ImGui::SetWindowFontScale(1.4f);
     ImGui::TextColored(ImVec4(1, 1, 0, 1), "Score: %d", m_score);
+    ImGui::TextColored(ImVec4(1, 0.3f, 0.3f, 1), "Lives: %d", m_lives);
 
     ImGui::Spacing();
 
-    if (m_paused)
+    if (!m_gameOver)
     {
-        if (ImGui::Button("Resume", ImVec2(110, 40)))
-            setPaused(false);
+        if (ImGui::Button(m_paused ? "Resume" : "Pause", ImVec2(110, 40)))
+            setPaused(!m_paused);
+        ImGui::SameLine();
     }
-    else
-    {
-        if (ImGui::Button("Pause", ImVec2(110, 40)))
-            setPaused(true);
-    }
-
-    ImGui::SameLine();
 
     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.7f, 0.1f, 0.1f, 1.0f));
     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.9f, 0.2f, 0.2f, 1.0f));
@@ -474,4 +478,45 @@ void Game::sUiSystem()
         m_running = false;
     ImGui::PopStyleColor(2);
     ImGui::End();
+
+    // game over screen
+    if (!m_gameOver)
+    {
+        return;
+    }
+
+    ImVec2 center(m_window.getSize().x / 2.0f, m_window.getSize().y / 2.0f);
+    ImGui::SetNextWindowPos(center, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+    ImGui::SetNextWindowSize(ImVec2(350, 0), ImGuiCond_Always);
+    ImGui::Begin("##gameover", nullptr,
+                 ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+
+    ImGui::SetWindowFontScale(1.4f);
+    ImGui::TextColored(ImVec4(1, 0.2f, 0.2f, 1), "GAME OVER");
+    ImGui::Text("Final Score: %d", m_score);
+    ImGui::Spacing();
+
+    if (ImGui::Button("Play Again", ImVec2(150, 40)))
+        resetGame();
+    ImGui::SameLine();
+    if (ImGui::Button("Exit", ImVec2(150, 40)))
+        m_running = false;
+
+    ImGui::End();
+}
+
+void Game::resetGame()
+{
+    // destroy all entites
+    for (auto &e : m_entities.getEntities())
+        e->destroy();
+
+    m_score = 0;
+    m_lives = 5;
+    m_currentFrame = 0;
+    m_lastEnemySpawnTime = 0;
+    m_gameOver = false;
+    m_paused = false;
+
+    spawnPlayer();
 }

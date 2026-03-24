@@ -136,6 +136,7 @@ void Game::spawnBullet(std::shared_ptr<Entity> e, const Vec2 &target)
     bulletEntity->cTransform = std::make_shared<CTransform>(currentPlayerPosition, velocityOfBullet, 0);
     bulletEntity->cShape = std::make_shared<CShape>(10, 32, sf::Color(0, 0, 255), sf::Color(0, 0, 0), 3);
     bulletEntity->cCollision = std::make_shared<CCollision>(10.0f);
+    bulletEntity->cLifespan = std::make_shared<CLifespan>(50);
 }
 
 void Game::spawnSpecialWeapon(std::shared_ptr<Entity> entity)
@@ -354,4 +355,28 @@ void Game::sCollision()
 
 void Game::sLifespan()
 {
+    for (auto &e : m_entities.getEntities())
+    {
+        if (!e->cLifespan)
+            continue;
+
+        if (e->cLifespan->remaining <= 0)
+        {
+            e->destroy();
+            continue;
+        }
+
+        e->cLifespan->remaining--;
+
+        // fade colors proportionally to remaining lifespan
+        float ratio = (float)e->cLifespan->remaining / (float)e->cLifespan->total;
+        auto fill = e->cShape->circle.getFillColor();
+        auto outline = e->cShape->circle.getOutlineColor();
+
+        fill.a = (sf::Uint8)(255 * ratio);
+        outline.a = (sf::Uint8)(255 * ratio);
+
+        e->cShape->circle.setFillColor(fill);
+        e->cShape->circle.setOutlineColor(outline);
+    }
 }

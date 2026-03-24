@@ -20,6 +20,6 @@ public:
     EntityManager();
     void update();
     std::shared_ptr<Entity> addEntity(const std::string &tag);
-    const EntityVec &getEntites();
+    const EntityVec &getEntities();
     const EntityVec &getEntities(const std::string &tag);
 };

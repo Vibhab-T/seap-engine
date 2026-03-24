@@ -1,0 +1,4 @@
+PLAYER sr cr fr fg fb otr otg otb ott v s
+ENEMY  sr cr otr otg otb ott vmin vmax l si smin smax
+BULLET sr cr fr fg fb otr otg otb ott v l s 
+WINDOW w h frl

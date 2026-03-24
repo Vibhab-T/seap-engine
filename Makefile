@@ -1,42 +1,36 @@
 CXX = g++
-CXXFLAGS = -std=c++23 -Wall -Iinclude -Ilib/imgui -Ilib/imgui-sfml
-LDFLAGS = -lsfml-graphics -lsfml-window -lsfml-system -lGL
+CXXFLAGS = -std=c++23 -Wall -Isrc
+LDFLAGS = -lsfml-graphics -lsfml-window -lsfml-system
 
-SRC = src/main.cpp \
-      lib/imgui/imgui.cpp \
-      lib/imgui/imgui_draw.cpp \
-      lib/imgui/imgui_tables.cpp \
-      lib/imgui/imgui_widgets.cpp \
-      lib/imgui/misc/cpp/imgui_stdlib.cpp \
-      lib/imgui-sfml/imgui-SFML.cpp
-
+SRC_DIR = src
 BUILD_DIR = bin/build
 OBJ_DIR = $(BUILD_DIR)/obj
 
-# Map source files to object files in OBJ_DIR
-OBJ = $(patsubst %.cpp,$(OBJ_DIR)/%.o,$(SRC))
+TARGET = $(BUILD_DIR)/game
 
-TARGET = $(BUILD_DIR)/my_app
+SRC = $(SRC_DIR)/main.cpp \
+      $(SRC_DIR)/Game.cpp \
+      $(SRC_DIR)/Entity.cpp \
+      $(SRC_DIR)/EntityManager.cpp \
+      $(SRC_DIR)/Vec2.cpp
+
+OBJ = $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(SRC))
 
 all: $(TARGET)
 
-# Build target in bin/build
 $(TARGET): $(OBJ)
 	@mkdir -p $(BUILD_DIR)
-	$(CXX) $(OBJ) -o $@ $(LDFLAGS)
+	$(CXX) $(OBJ) -o $(TARGET) $(LDFLAGS)
 
-# Compile each object file to OBJ_DIR
-$(OBJ_DIR)/%.o: %.cpp
-	@mkdir -p $(dir $@)
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
+	@mkdir -p $(OBJ_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-# Clean all object files and target
+run: $(TARGET)
+	@echo "Running game..."
+	@./$(TARGET)
+
 clean:
 	rm -rf $(BUILD_DIR)
 
-# Run target: clean, build, cd to build, run, return
-run: clean
-	$(MAKE) $(TARGET)
-	@echo "Running $(TARGET)..."
-	@cd $(BUILD_DIR) && ./my_app
-	@echo "Returned to source folder."
+.PHONY: all clean run
